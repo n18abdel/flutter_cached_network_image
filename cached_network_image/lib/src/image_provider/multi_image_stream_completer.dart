@@ -60,8 +60,10 @@ class MultiImageStreamCompleter extends ImageStreamCompleter {
   ui.FrameInfo? _nextFrame;
   // When the current was first shown.
   Duration? _shownTimestamp;
-  // The requested duration for the current frame;
+  // The requested duration for the current frame.
   Duration? _frameDuration;
+  // The default duration for the frame that _frameDuration less than 10ms.
+  static const Duration _DefaultDuration = Duration(milliseconds: 100);
   // How many frames have been emitted so far.
   int _framesEmitted = 0;
   Timer? _timer;
@@ -98,6 +100,14 @@ class MultiImageStreamCompleter extends ImageStreamCompleter {
       _emitFrame(ImageInfo(image: _nextFrame!.image, scale: _scale));
       _shownTimestamp = timestamp;
       _frameDuration = _nextFrame!.duration;
+      // When the _frameDuration is less then 10ms, give the default delay time.
+      // Force frames with a small or no duration to 100ms to be consistent
+      // with web browsers and picture decoding tools. This also avoids
+      // incorrect durations between frames when padding frames are
+      // discarded.
+      if (_frameDuration!.inMilliseconds <= 10) {
+        _frameDuration = _DefaultDuration;
+      }
       _nextFrame = null;
       if (_framesEmitted % _codec!.frameCount == 0 && _nextImageCodec != null) {
         _switchToNewCodec();
